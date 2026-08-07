@@ -16,6 +16,9 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
+    - name: Retarget Solution to Latest Toolset
+      run: msbuild OverwatchDumpFix.sln /t:RetargetToolset /p:PlatformToolset=v143
+
     - name: Build Solution
       run: msbuild OverwatchDumpFix.sln /p:Configuration=Release /p:Platform=x64
 
