@@ -16,8 +16,29 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
-    - name: Retarget Solution to Latest Toolset
-      run: msbuild OverwatchDumpFix.sln /t:RetargetToolset /p:PlatformToolset=v143
+    - name: Update Project Configuration for v143
+      shell: pwsh
+      run: |
+        $vcxprojPath = "OverwatchDumpFix/OverwatchDumpFix.vcxproj"
+        [xml]$xml = Get-Content $vcxprojPath
+        
+        # تعديل الـ PlatformToolset إلى v143
+        $xml.Project.PropertyGroup | Where-Object { $_.Label -eq "Globals" } | ForEach-Object {
+            if (-not $_.PlatformToolset) {
+                $_.AppendChild($xml.CreateElement("PlatformToolset", $xml.DocumentElement.NamespaceURI)) | Out-Null
+            }
+            $_.PlatformToolset = "v143"
+        }
+        
+        # إضافة أو تحديث إصدار ويندوز المستهدف
+        $xml.Project.PropertyGroup | Where-Object { $_.Condition -like "*Configuration*" -or $_.Label -eq "Globals" } | ForEach-Object {
+            if (-not $_.WindowsTargetPlatformVersion) {
+                $_.AppendChild($xml.CreateElement("WindowsTargetPlatformVersion", $xml.DocumentElement.NamespaceURI)) | Out-Null
+            }
+            $_.WindowsTargetPlatformVersion = "10.0"
+        }
+        
+        $xml.Save($vcxprojPath)
 
     - name: Build Solution
       run: msbuild OverwatchDumpFix.sln /p:Configuration=Release /p:Platform=x64
