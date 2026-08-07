@@ -16,29 +16,23 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
-    - name: Update Project Configuration for v143
+    - name: Force Replace Toolset in Vcxproj
       shell: pwsh
       run: |
         $vcxprojPath = "OverwatchDumpFix/OverwatchDumpFix.vcxproj"
-        [xml]$xml = Get-Content $vcxprojPath
+        $content = Get-Content $vcxprojPath -Raw
         
-        # تعديل الـ PlatformToolset إلى v143
-        $xml.Project.PropertyGroup | Where-Object { $_.Label -eq "Globals" } | ForEach-Object {
-            if (-not $_.PlatformToolset) {
-                $_.AppendChild($xml.CreateElement("PlatformToolset", $xml.DocumentElement.NamespaceURI)) | Out-Null
-            }
-            $_.PlatformToolset = "v143"
+        # استبدال أي إعداد قديم للـ Toolset بـ v143 الحديثة
+        $content = $content -replace '<PlatformToolset>.*?</PlatformToolset>', '<PlatformToolset>v143</PlatformToolset>'
+        
+        # ضبط إصدار ويندوز المستهدف
+        if ($content -match '<WindowsTargetPlatformVersion>') {
+            $content = $content -replace '<WindowsTargetPlatformVersion>.*?</WindowsTargetPlatformVersion>', '<WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>'
+        } else {
+            $content = $content -replace '</PropertyGroup>', '<WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion></PropertyGroup>'
         }
         
-        # إضافة أو تحديث إصدار ويندوز المستهدف
-        $xml.Project.PropertyGroup | Where-Object { $_.Condition -like "*Configuration*" -or $_.Label -eq "Globals" } | ForEach-Object {
-            if (-not $_.WindowsTargetPlatformVersion) {
-                $_.AppendChild($xml.CreateElement("WindowsTargetPlatformVersion", $xml.DocumentElement.NamespaceURI)) | Out-Null
-            }
-            $_.WindowsTargetPlatformVersion = "10.0"
-        }
-        
-        $xml.Save($vcxprojPath)
+        Set-Content $vcxprojPath -Value $content -Encoding UTF8
 
     - name: Build Solution
       run: msbuild OverwatchDumpFix.sln /p:Configuration=Release /p:Platform=x64
