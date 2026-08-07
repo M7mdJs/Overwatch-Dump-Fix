@@ -21,17 +21,12 @@ jobs:
       run: |
         $vcxprojPath = "OverwatchDumpFix/OverwatchDumpFix.vcxproj"
         $content = Get-Content $vcxprojPath -Raw
-        
-        # استبدال أي إعداد قديم للـ Toolset بـ v143 الحديثة
         $content = $content -replace '<PlatformToolset>.*?</PlatformToolset>', '<PlatformToolset>v143</PlatformToolset>'
-        
-        # ضبط إصدار ويندوز المستهدف
         if ($content -match '<WindowsTargetPlatformVersion>') {
             $content = $content -replace '<WindowsTargetPlatformVersion>.*?</WindowsTargetPlatformVersion>', '<WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>'
         } else {
             $content = $content -replace '</PropertyGroup>', '<WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion></PropertyGroup>'
         }
-        
         Set-Content $vcxprojPath -Value $content -Encoding UTF8
 
     - name: Build Solution
@@ -42,5 +37,5 @@ jobs:
       with:
         name: OverwatchDumpFix-Plugin
         path: |
-          x64/Release/*.dp64
-          x64/Release/*.dll
+          bin/x64/Release/*.dp64
+          bin/x64/Release/*.dll
